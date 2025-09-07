@@ -11,7 +11,7 @@ window.addEventListener('load', function(){
 // iTyped 
 
 window.ityped.init(document.querySelector('.iTyped'), {
-    strings: ["I'm a Lead Software Engineer", "I'm an Educator", 'I Love Coffee'],
+    strings: ["I'm a Lead Software Engineer", "I'm an Educator", 'Coffee keeps me going'],
     loop: true
 });
 
