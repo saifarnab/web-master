@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electricity Bill Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+    }
+    .container {
+      max-width: 650px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    }
+    h1 { margin-top: 0; }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 6px;
+      background: #1677ff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { opacity: .9; }
+    .result {
+      margin-top: 25px;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 9px;
+      text-align: right;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    .total {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .error {
+      color: #c62828;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Electricity Bill Calculator</h1>
+
+  <label for="currentUnits">Current electricity units</label>
+  <input type="number" id="currentUnits" min="0" step="1" placeholder="e.g. 650">
+
+  <label for="previousUnits">Previous electricity units</label>
+  <input type="number" id="previousUnits" min="0" step="1" placeholder="e.g. 500">
+
+  <button onclick="calculateBill()">Calculate Bill</button>
+
+  <div id="error" class="error"></div>
+  <div id="result" class="result" style="display:none;"></div>
+</div>
+
+<script>
+function calculateBill() {
+  const currentUnits = Number(document.getElementById("currentUnits").value);
+  const previousUnits = Number(document.getElementById("previousUnits").value);
+  const error = document.getElementById("error");
+  const result = document.getElementById("result");
+
+  error.textContent = "";
+  result.style.display = "none";
+
+  if (
+    !Number.isFinite(currentUnits) ||
+    !Number.isFinite(previousUnits) ||
+    currentUnits < 0 ||
+    previousUnits < 0
+  ) {
+    error.textContent = "Please enter valid unit values.";
+    return;
+  }
+
+  const usedUnits = currentUnits - previousUnits;
+
+  if (usedUnits < 0) {
+    error.textContent = "Current units cannot be less than previous units.";
+    return;
+  }
+
+  // Slab limits and rates
+  const slabs = [
+    { limit: 75, rate: 5.26 },
+    { limit: 125, rate: 8.50 },
+    { limit: 100, rate: 9.10 },
+    { limit: 100, rate: 9.62 },
+    { limit: 200, rate: 15.01 },
+    { limit: Infinity, rate: 17.35 }
+  ];
+
+  const demandCharge = 252.0;
+  const taxPercentage = 5.0;
+
+  let remainingUnits = usedUnits;
+  let bill = 0;
+  let breakdownRows = "";
+
+  slabs.forEach((slab, index) => {
+    if (remainingUnits <= 0) return;
+
+    const slabUnits = Math.min(remainingUnits, slab.limit);
+    const slabAmount = slabUnits * slab.rate;
+
+    bill += slabAmount;
+    remainingUnits -= slabUnits;
+
+    breakdownRows += `
+      <tr>
+        <td>Slab ${index + 1}</td>
+        <td>${slabUnits}</td>
+        <td>${slab.rate.toFixed(2)}</td>
+        <td>${slabAmount.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  const amountBeforeTax = bill + demandCharge;
+  const taxAmount = amountBeforeTax * taxPercentage / 100;
+  const totalAmount = amountBeforeTax + taxAmount;
+
+  const now = new Date();
+  const monthYear = now.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric"
+  });
+
+  result.innerHTML = `
+    <h2>Electricity Bill for ${monthYear}</h2>
+
+    <p><strong>Current Units:</strong> ${currentUnits}</p>
+    <p><strong>Previous Units:</strong> ${previousUnits}</p>
+    <p><strong>Units Consumed:</strong> ${usedUnits} units</p>
+
+    <h3>Slab-wise Breakdown</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Slab</th>
+          <th>Units</th>
+          <th>Rate (Taka)</th>
+          <th>Amount (Taka)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${breakdownRows}
+      </tbody>
+    </table>
+
+    <p><strong>Energy Charge:</strong> ${bill.toFixed(2)} taka</p>
+    <p><strong>Demand Charge:</strong> ${demandCharge.toFixed(2)} taka</p>
+    <p><strong>Tax (@${taxPercentage}%):</strong> ${taxAmount.toFixed(2)} taka</p>
+
+    <div class="total">
+      Total Payable: ${totalAmount.toFixed(2)} taka
+    </div>
+  `;
+
+  result.style.display = "block";
+}
+</script>
+
+</body>
+</html>
